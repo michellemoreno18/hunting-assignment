@@ -5,23 +5,89 @@ format: html
 editor: visual
 ---
 
-## Quarto
+# Hunting Two-Variable Dynamic Assignment
 
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+Objective: In this assignment, we extend a classical predator-prey model to include conditional hunting/harvesting (in our model we use, synonymous term, "hunting"). The goal is to examine how different hunting intensities and rules (e.g., only hunt when prey exceed a certain threshold) affect the long-term stability of the ecosystem. This approach helps identify sustainable harvesting strategies that protect both predator and prey populations over time.
 
-## Running Code
+## Part 1: Build the Hunting Model
 
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+## Load Libraries
 
-```{r}
-1 + 1
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(deSolve)
+library(ggpubr)
+library(tidyverse)
+library(sensitivity)
+library(purrr)
+library(ggpubr)
+library(here)
 ```
 
-You can add options to executable code like this
+## Part 2: Hunting Effects on Stability
+
+## Source the Data
 
 ```{r}
-#| echo: false
-2 * 2
+source(here("R/hunting-lotvmod.R"))
+hunting-lotvmod
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+Here we set up the Base Parameters. Built model called hunting-lotmod.R by adding hunting/harvesting to the lotvmodK.R. We dded a conditional harvest (min_harvest_X) and min(hX \* X, X) to make sure we do not over-harvest.
+
+```{r}
+hX_vals <- seq(0, 0.2, by = 0.02)
+min_harvest_X_vals <- seq(100, 800, by = 100)
+grid <- expand.grid(hX = hX_vals, min_harvest_X = min_harvest_X_vals)
+```
+
+```{r}
+# Fixed parameters
+params_base <- list(
+  rX = 0.95, KX = 2000, aX = 0.01, aY = 0.005, c = 0.6,
+  dP = 0.4, KP = 500, hP = 0, Y = 1000
+)
+
+# Initial state
+state <- c(X = 1000, P = 100)
+
+# Time vector
+times <- seq(0, 50, by = 1)
+```
+
+## Results for each parameter
+
+```{r}
+results <- pmap_dfr(grid, function(hX, min_harvest_X) {
+  parms <- c(params_base, hX = hX, min_harvest_X = min_harvest_X)
+  out <- ode(y = state, times = times, func = complex_pred_prey, parms = parms)
+  out_df <- as.data.frame(out)
+  
+  final_X <- tail(out_df$X, 1)
+  final_P <- tail(out_df$P, 1)
+  
+  tibble(hX, min_harvest_X,
+         final_X, final_P,
+         stable = (final_X > 50) & (final_P > 50))
+})
+```
+
+A simulation was considered stable if both prey and predator populations remained above 50 individuals at the end of 50 years. This metric was chosen because it is biologically meaningful and interpretable. It is biologically meaningful because populations below 50 individuals are at high risk of extinction due to demographic or environmental stochasticity. It is simple and interpretable, which allows for clear comparisons across harvesting strategies. This threshold approach avoids false confidence in highly fluctuating but non-zero population dynamics and provides a conservative estimate of sustainability.
+
+## Data Visualization
+
+```{r}
+library(ggplot2)
+
+ggplot(results, aes(x = hX, y = min_harvest_X, fill = stable)) +
+  geom_tile() +
+  scale_fill_manual(values = c("TRUE" = "darkgreen", "FALSE" = "red")) +
+  labs(title = "Population Stability Across Hunting Strategies",
+       x = "Prey Harvest Rate (hX)",
+       y = "Minimum Prey Threshold for Harvesting")
+
+```
+
+## Recommendation
+
+Based on my simulation results, I recommend a sustainable prey hunting level of 0.10 (hX), paired with a minimum prey population threshold of 300 (min_harvest_X). This combination consistently maintained both prey and predator populations above the stability threshold of 50 individuals after 50 years, indicating long-term coexistence. I selected this value because it represents the highest prey harvest rate that did not lead to predator extinction or prey collapse across the explored parameter space. Higher harvest rates tended to destabilize the system, particularly when hunting was allowed at lower prey abundances. By enforcing a conservative threshold before harvesting begins, this strategy avoids over-exploitation during low-prey years while still allowing for meaningful resource use.
