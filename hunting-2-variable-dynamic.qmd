@@ -7,7 +7,7 @@ editor: visual
 
 # Hunting Two-Variable Dynamic Assignment
 
-Objective: In this assignment, we extend a classical predator-prey model to include conditional hunting/harvesting (in our model we use, synonymous term, "hunting"). The goal is to examine how different hunting intensities and rules (e.g., only hunt when prey exceed a certain threshold) affect the long-term stability of the ecosystem. This approach helps identify sustainable harvesting strategies that protect both predator and prey populations over time.
+In this assignment, we extend a classical predator-prey model to include conditional hunting/harvesting (in our model we use, synonymous term, "hunting"). The goal is to examine how different hunting intensities and rules (e.g., only hunt when prey exceed a certain threshold) affect the long-term stability of the ecosystem. This approach helps identify sustainable harvesting strategies that protect both predator and prey populations over time.
 
 ## Part 1: Build the Hunting Model
 
@@ -21,6 +21,7 @@ library(tidyverse)
 library(sensitivity)
 library(purrr)
 library(ggpubr)
+library(ggplot2)
 library(here)
 ```
 
@@ -29,8 +30,7 @@ library(here)
 ## Source the Data
 
 ```{r}
-source(here("R/hunting-lotvmod.R"))
-hunting-lotvmod
+source("hunting-lotvmod.R")
 ```
 
 Here we set up the Base Parameters. Built model called hunting-lotmod.R by adding hunting/harvesting to the lotvmodK.R. We dded a conditional harvest (min_harvest_X) and min(hX \* X, X) to make sure we do not over-harvest.
@@ -63,6 +63,10 @@ results <- pmap_dfr(grid, function(hX, min_harvest_X) {
   out <- ode(y = state, times = times, func = complex_pred_prey, parms = parms)
   out_df <- as.data.frame(out)
   
+  # Clean up: cap negative populations at zero
+  out_df$X <- pmax(out_df$X, 0)
+  out_df$P <- pmax(out_df$P, 0)
+
   final_X <- tail(out_df$X, 1)
   final_P <- tail(out_df$P, 1)
   
@@ -77,15 +81,24 @@ A simulation was considered stable if both prey and predator populations remaine
 ## Data Visualization
 
 ```{r}
-library(ggplot2)
-
 ggplot(results, aes(x = hX, y = min_harvest_X, fill = stable)) +
-  geom_tile() +
+  geom_tile(color = "white") +
   scale_fill_manual(values = c("TRUE" = "darkgreen", "FALSE" = "red")) +
-  labs(title = "Population Stability Across Hunting Strategies",
-       x = "Prey Harvest Rate (hX)",
-       y = "Minimum Prey Threshold for Harvesting")
+  labs(
+    title = "Population Stability Across Hunting Strategies",
+    subtitle = "Green = Stable (Both Populations > 50 after 50 years)",
+    x = "Prey Harvest Rate (hX)",
+    y = "Minimum Prey Threshold for Harvesting",
+    fill = "Stable?"
+  ) +
+  theme_minimal(base_size = 14)
+```
 
+## Checking population values
+
+```{r}
+summary(results$final_X)
+summary(results$final_P)
 ```
 
 ## Recommendation
