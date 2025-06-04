@@ -1,10 +1,16 @@
+
 #' Complex Predator-Prey Model with Alternative Prey and Harvesting + Harvest Threshold
+#' 
+#' Adapted from "Rapid and direct recoveries of predators and prey through 
+#' synchronized ecosystem management" by Jameal F. Samhouri, Adrian C. Stier, 
+#' Shannon M. Hennessey, Mark Novak, Benjamin S. Halpern, and Phillip S. Levin (2017)
 #'
 #' Computes the rate of change of prey (X) and predator (P) populations,
 #' incorporating logistic growth, predation, alternative prey (Y), and conditional harvesting.
 #'
 #' @param t Time
-#' @param state Named vector of state variables: X (prey), P (predator), Y (alternative prey)
+#' @param state Named vector of state variables: X (prey), P (predator), 
+#' Y (alternative prey)
 #' @param parms List of parameters:
 #'  - rX: intrinsic growth rate of prey X
 #'  - KX: carrying capacity of prey X

@@ -9,9 +9,9 @@ editor: visual
 
 In this assignment, we extend a classical predator-prey model to include conditional hunting/harvesting (in our model we use, synonymous term, "hunting"). The goal is to examine how different hunting intensities and rules (e.g., only hunt when prey exceed a certain threshold) affect the long-term stability of the ecosystem. This approach helps identify sustainable harvesting strategies that protect both predator and prey populations over time.
 
-## Part 1: Build the Hunting Model
+The predator-prey model is adapted from "Rapid and direct recoveries of predators and prey through synchronized ecosystem management" by Jameal F. Samhouri, Adrian C. Stier, Shannon M. Hennessey, Mark Novak, Benjamin S. Halpern, and Phillip S. Levin (2017).
 
-## Load Libraries
+# Load Libraries
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -21,13 +21,10 @@ library(tidyverse)
 library(sensitivity)
 library(purrr)
 library(ggpubr)
-library(ggplot2)
 library(here)
 ```
 
-## Part 2: Hunting Effects on Stability
-
-## Source the Data
+## Source the function
 
 ```{r}
 source("hunting-lotvmod.R")
@@ -60,7 +57,8 @@ times <- seq(0, 50, by = 1)
 ```{r}
 results <- pmap_dfr(grid, function(hX, min_harvest_X) {
   parms <- c(params_base, hX = hX, min_harvest_X = min_harvest_X)
-  out <- ode(y = state, times = times, func = complex_pred_prey, parms = parms)
+  out <- ode(y = state, times = times, func = complex_pred_prey, 
+             parms = parms)
   out_df <- as.data.frame(out)
   
   # Clean up: cap negative populations at zero
@@ -76,7 +74,7 @@ results <- pmap_dfr(grid, function(hX, min_harvest_X) {
 })
 ```
 
-A simulation was considered stable if both prey and predator populations remained above 50 individuals at the end of 50 years. This metric was chosen because it is biologically meaningful and interpretable. It is biologically meaningful because populations below 50 individuals are at high risk of extinction due to demographic or environmental stochasticity. It is simple and interpretable, which allows for clear comparisons across harvesting strategies. This threshold approach avoids false confidence in highly fluctuating but non-zero population dynamics and provides a conservative estimate of sustainability.
+A simulation was considered stable if both prey and predator populations remained above 50 individuals at the end of 50 years. This metric was chosen because it is biologically meaningful and easily interpreted. It is biologically meaningful because populations below 50 individuals are at high risk of extinction due to demographic or environmental stochasticity. It is simple and easily interpreted, which allows for clear comparisons across harvesting strategies. This threshold approach avoids false confidence in highly fluctuating but non-zero population dynamics and provides a conservative estimate of sustainability.
 
 ## Data Visualization
 
@@ -84,13 +82,11 @@ A simulation was considered stable if both prey and predator populations remaine
 ggplot(results, aes(x = hX, y = min_harvest_X, fill = stable)) +
   geom_tile(color = "white") +
   scale_fill_manual(values = c("TRUE" = "darkgreen", "FALSE" = "red")) +
-  labs(
-    title = "Population Stability Across Hunting Strategies",
+  labs(title = "Population Stability Across Hunting Strategies",
     subtitle = "Green = Stable (Both Populations > 50 after 50 years)",
     x = "Prey Harvest Rate (hX)",
     y = "Minimum Prey Threshold for Harvesting",
-    fill = "Stable?"
-  ) +
+    fill = "Stable?") +
   theme_minimal(base_size = 14)
 ```
 
@@ -98,6 +94,7 @@ ggplot(results, aes(x = hX, y = min_harvest_X, fill = stable)) +
 
 ```{r}
 summary(results$final_X)
+
 summary(results$final_P)
 ```
 
