@@ -1,7 +1,9 @@
 ---
 title: "hunting-2-variable-dynamic"
 author: "Kyle Burt, Michelle Moreno"
-format: html
+format: 
+  html:
+    embed-resources: true
 editor: visual
 ---
 
